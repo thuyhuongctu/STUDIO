@@ -1,5 +1,5 @@
 /* STUDIO · Je m'appelle Hương — service worker */
-const CACHE = 'jmh-studio-v2';
+const CACHE = 'jmh-studio-v3';
 const CORE = [
   './',
   './index.html',
@@ -10,6 +10,7 @@ const CORE = [
   './assets/poses/huong-thumbsup.webp',
   './assets/poses/huong-walk.webp',
   './assets/poses/huong-desk.webp',
+  './assets/poses/phan-anh-tu.webp',
   './icons/icon-brand-192.png',
   './icons/icon-brand-512.png',
   './icons/icon-maskable-512.png'

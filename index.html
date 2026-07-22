@@ -251,6 +251,7 @@ footer .sig{font-family:var(--script);font-size:26px;color:var(--accent);letter-
     <div><label class="small" data-i="durL">Giây/cảnh khi chưa có audio</label><input type="number" id="optDur" min="2" max="60" value="6"></div>
     <div><label class="small" data-i="logoL">Logo LR trên video</label><select id="optLogo"><option value="1" selected data-i="yes">Có</option><option value="0" data-i="no">Không</option></select></div>
     <div><label class="small" data-i="mapL">Bản đồ Việt Nam in mờ</label><select id="optMap"><option value="1" selected data-i="yes">Có</option><option value="0" data-i="no">Không</option></select></div>
+    <div><label class="small" data-i="charShowL">Nhân vật trên video</label><select id="optChar"><option value="1" selected data-i="chAlways">Luôn hiện</option><option value="media" data-i="chHideMedia">Ẩn khi có media nền</option><option value="0" data-i="chNever">Ẩn</option></select></div>
   </div>
   <div class="hint" data-i="hintTts"></div>
   <div class="row">
@@ -292,7 +293,8 @@ vi:{
  charDefaultTag:"Trợ lý trình bày",
  charDefaultNote:"HUONG AI — trợ lý áo dài trắng — đứng trong khung hình và chuyển động theo nhịp giọng đọc của bạn. Chọn tư thế bên dưới, hoặc tải ảnh riêng để thay thế.",
  poseL:"Tư thế trợ lý",
- poseNames:{present:"Trình bày",wave:"Vẫy chào",thumbsup:"Tán thành",walk:"Bước đi",desk:"Bàn làm việc",class:"Giảng đường"},
+ poseNames:{present:"Trình bày",wave:"Vẫy chào",thumbsup:"Tán thành",walk:"Bước đi",desk:"Bàn làm việc",tu:"TS. Phan Anh Tú",class:"Giảng đường"},
+ charShowL:"Nhân vật trên video", chAlways:"Luôn hiện", chHideMedia:"Ẩn khi có media nền", chNever:"Ẩn",
  uploadChar:"Tải ảnh nhân vật khác (PNG tách nền đẹp nhất)",
  charReset:"↺ Dùng lại HUONG AI",
  hintChar:"Ảnh PNG tách nền sẽ hiển thị dạng cắt rời đứng trên nền video; ảnh thường hiển thị trong khung trình bày bo góc như HUONG AI.",
@@ -332,7 +334,8 @@ en:{
  charDefaultTag:"Presenter assistant",
  charDefaultNote:"HUONG AI — the white áo dài assistant — stands in the frame and moves with your narration rhythm. Pick a pose below, or upload your own image to replace her.",
  poseL:"Assistant pose",
- poseNames:{present:"Presenting",wave:"Waving",thumbsup:"Thumbs up",walk:"Walking",desk:"At desk",class:"Lecture hall"},
+ poseNames:{present:"Presenting",wave:"Waving",thumbsup:"Thumbs up",walk:"Walking",desk:"At desk",tu:"Dr. Phan Anh Tú",class:"Lecture hall"},
+ charShowL:"Character on video", chAlways:"Always show", chHideMedia:"Hide when scene has media", chNever:"Hidden",
  uploadChar:"Upload another character image (transparent PNG works best)",
  charReset:"↺ Back to HUONG AI",
  hintChar:"A transparent PNG is drawn as a cut-out standing on the video; a regular photo is shown in a rounded presenter frame like HUONG AI.",
@@ -600,12 +603,13 @@ bgInput.addEventListener('change',()=>{
 
 /* ============ NHÂN VẬT: HUONG AI (5 tư thế) + ảnh tải lên ============ */
 const POSES=[
-  {id:'present', src:'assets/poses/huong-present.webp', cut:true},
-  {id:'wave',    src:'assets/poses/huong-wave.webp',    cut:true},
-  {id:'thumbsup',src:'assets/poses/huong-thumbsup.webp',cut:true},
-  {id:'walk',    src:'assets/poses/huong-walk.webp',    cut:true},
-  {id:'desk',    src:'assets/poses/huong-desk.webp',    cut:true},
-  {id:'class',   src:'assets/huong-ai.jpg',             cut:false}
+  {id:'present', src:'assets/poses/huong-present.webp', cut:true,  who:'HUONG AI'},
+  {id:'wave',    src:'assets/poses/huong-wave.webp',    cut:true,  who:'HUONG AI'},
+  {id:'thumbsup',src:'assets/poses/huong-thumbsup.webp',cut:true,  who:'HUONG AI'},
+  {id:'walk',    src:'assets/poses/huong-walk.webp',    cut:true,  who:'HUONG AI'},
+  {id:'desk',    src:'assets/poses/huong-desk.webp',    cut:true,  who:'HUONG AI'},
+  {id:'tu',      src:'assets/poses/phan-anh-tu.webp',   cut:true,  who:'TS. PHAN ANH TÚ'},
+  {id:'class',   src:'assets/huong-ai.jpg',             cut:false, who:'HUONG AI'}
 ];
 const poseImgs={};
 POSES.forEach(p=>{
@@ -678,6 +682,7 @@ function drawVNMap(g,x,y,h,alpha){
 /* ============ VẼ KHUNG HÌNH ============ */
 const cv=$('stage'), g=cv.getContext('2d');
 const W=1280,H=720;
+const blurCv=document.createElement('canvas'), blurG=blurCv.getContext('2d');
 function curScene(){ return state.scenes[state.cur]||null; }
 function sceneMedia(s){ return s ? (s.bgVid||s.bgImg) : null; }
 
@@ -695,8 +700,23 @@ function drawFrame(s,tt,amp){
   if(media){
     const mw=media.videoWidth||media.width, mh=media.videoHeight||media.height;
     if(mw&&mh){
-      const sc=Math.max(W/mw,H/mh), dw=mw*sc, dh=mh*sc;
-      try{ g.drawImage(media,(W-dw)/2,(H-dh)/2,dw,dh); }catch(e){}
+      const cover=Math.max(W/mw,H/mh), contain=Math.min(W/mw,H/mh);
+      try{
+        if(cover/contain>1.25){
+          /* video/ảnh dọc: nền mờ + hình nguyên vẹn ở giữa (không cắt cụt) */
+          blurCv.width=64; blurCv.height=36;
+          blurG.drawImage(media,0,0,64,36);
+          g.save(); g.imageSmoothingEnabled=true;
+          g.drawImage(blurCv,0,0,W,H);
+          g.fillStyle='rgba(32,25,27,0.35)'; g.fillRect(0,0,W,H);
+          g.restore();
+          const cw2=mw*contain, ch2=mh*contain;
+          g.drawImage(media,(W-cw2)/2,(H-ch2)/2,cw2,ch2);
+        }else{
+          const dw=mw*cover, dh=mh*cover;
+          g.drawImage(media,(W-dw)/2,(H-dh)/2,dw,dh);
+        }
+      }catch(e){}
     }
     const sh=g.createLinearGradient(0,H-190,0,H);
     sh.addColorStop(0,'rgba(32,25,27,0)'); sh.addColorStop(1,'rgba(32,25,27,0.62)');
@@ -738,7 +758,7 @@ function drawFrame(s,tt,amp){
   g.fillStyle = media ? 'rgba(255,255,255,0.92)' : 'rgba(158,59,78,0.8)';
   g.fillText("Je m'appelle Hương", W-320, H-18);
 
-  drawCharacter(g,tt,amp);
+  drawCharacter(g,tt,amp,s);
 
   if(s && $('optSub').value==='1' && s.text){
     g.font='600 25px system-ui,sans-serif';
@@ -771,7 +791,10 @@ function drawFrame(s,tt,amp){
   }
 }
 
-function drawCharacter(g,tt,amp){
+function drawCharacter(g,tt,amp,s){
+  const mode=$('optChar').value;
+  if(mode==='0') return;
+  if(mode==='media' && sceneMedia(s)) return;
   const size=(+$('charSize').value/100);
   const cx=W*(+$('charX').value/100);
   const bob=Math.sin(tt*7)*6*amp + amp*10;
@@ -1005,7 +1028,7 @@ function loadScript(){
   }catch(e){}
   return false;
 }
-const SETTING_IDS=['vidTitle','vidBrand','optSub','optDur','optLogo','optMap','charSize','charX'];
+const SETTING_IDS=['vidTitle','vidBrand','optSub','optDur','optLogo','optMap','optChar','charSize','charX'];
 function saveSettings(){
   const o={}; SETTING_IDS.forEach(id=>o[id]=$(id).value);
   store.set('jmh-studio-settings', JSON.stringify(o));
