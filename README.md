@@ -6,9 +6,10 @@
 
 ## ✨ Tính năng / Features
 
+- 🎥 **Tải video lên** — mỗi video thành một cảnh, **giữ nguyên tiếng** của video; HUONG AI thuyết minh/nhép miệng theo âm thanh; audio được đưa vào video xuất ra.
 - 🎬 **Kịch bản theo cảnh** — nhập từ **PDF**, **CSV** hoặc dán văn bản; mỗi đoạn thành một cảnh; tự lưu trên thiết bị (localStorage).
 - 🎙 **Giọng đọc của bạn** — ghi âm trực tiếp từng cảnh hoặc tải file audio lên; nhân vật mấp máy theo nhịp giọng nói (Web Audio analyser).
-- 👩‍🏫 **HUONG AI** — nhân vật trình bày mặc định (phong cách hoạt hình 3D) hiển thị trong khung trình bày bên phải video; có thể thay bằng ảnh PNG tách nền của riêng bạn.
+- 👩‍🏫 **HUONG AI** — trợ lý trình bày áo dài trắng (hoạt hình 3D, đã tách nền) với **5 tư thế**: trình bày, vẫy chào, tán thành, bước đi, bàn làm việc — cùng cảnh giảng đường dạng khung; có thể thay bằng ảnh PNG tách nền của riêng bạn.
 - 🗺 **Bản đồ Việt Nam in mờ** — làm nền chìm cho giao diện và video, có quần đảo **Hoàng Sa** và **Trường Sa**.
 - 🎞 **Media nền từng cảnh** — nhận cả ảnh và video (video tự tắt tiếng làm phông chuyển động).
 - 📝 **Phụ đề, tiêu đề, dòng thương hiệu, logo LR** tùy chỉnh; song ngữ **VI/EN**.
@@ -38,7 +39,8 @@ index.html            # toàn bộ ứng dụng (HTML + CSS + JS, không build s
 manifest.webmanifest  # PWA manifest (cài lên điện thoại)
 sw.js                 # service worker — chạy ngoại tuyến sau lần mở đầu
 icons/                # logo thương hiệu LR (đồng bộ với M-AIDA)
-assets/huong-ai.jpg   # nhân vật HUONG AI
+assets/huong-ai.jpg   # HUONG AI — cảnh giảng đường (khung trình bày)
+assets/poses/         # HUONG AI áo dài trắng — 5 tư thế đã tách nền (webp)
 ```
 
 ---

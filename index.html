@@ -55,6 +55,7 @@ button:active{transform:scale(.985)}
 input,textarea,select{font-family:inherit;font-size:14px;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px;width:100%}
 textarea{resize:vertical;min-height:72px;line-height:1.6}
 input:focus,textarea:focus,select:focus,button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+input[type=range]{accent-color:var(--accent);padding:0;border:none;background:transparent}
 
 /* ===== Header ===== */
 header{display:flex;align-items:center;gap:12px;padding:8px 2px 14px}
@@ -120,6 +121,11 @@ label.small{display:block;font-size:10.5px;color:var(--muted);margin-bottom:5px;
 
 .filebtn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:13px;background:var(--soft);border:1.5px dashed var(--accent);border-radius:13px;color:var(--accent);font-weight:700;font-size:13px;width:100%;cursor:pointer}
 .filebtn input{display:none}
+.filebtn.primary{background:var(--accent);border-style:solid;border-color:var(--accent-strong);color:#fff;box-shadow:0 4px 14px rgba(158,59,78,.3)}
+.pose-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:8px;margin:10px 0 14px}
+.pose-grid button{background:var(--paper);border:1px solid var(--line);border-radius:13px;padding:8px 4px 6px;display:flex;flex-direction:column;gap:5px;align-items:center;color:var(--muted);font-size:10.5px;font-weight:700}
+.pose-grid button img{height:82px;object-fit:contain;pointer-events:none}
+.pose-grid button.on{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-ghost);color:var(--accent)}
 img.char-preview{max-width:170px;border-radius:14px;border:1px solid var(--line);display:block;margin-top:10px;box-shadow:var(--shadow)}
 .char-card{display:flex;gap:14px;align-items:flex-start;background:var(--paper);border:1px solid var(--line);border-radius:15px;padding:12px;margin-bottom:12px}
 .char-card img{width:96px;border-radius:12px;flex:none;box-shadow:var(--shadow)}
@@ -200,6 +206,7 @@ footer .sig{font-family:var(--script);font-size:26px;color:var(--accent);letter-
 <div class="pane show" id="pane-scenes">
   <h2 data-i="hScenes">Các cảnh &amp; lời thoại</h2><div class="rule"></div>
   <div class="row">
+    <label class="filebtn primary">🎥 <span data-i="importVid">Tải video lên</span><input type="file" id="vidFiles" accept="video/*" multiple></label>
     <label class="filebtn">📕 <span data-i="importPdf">Nhập từ PDF</span><input type="file" id="pdfFile" accept=".pdf"></label>
     <label class="filebtn">📄 <span data-i="importCsv">Nhập từ CSV</span><input type="file" id="csvFile" accept=".csv,.txt,text/csv,text/plain"></label>
     <button class="btn-ghost" id="btnPaste" style="padding:13px" data-i="paste">✍️ Dán kịch bản</button>
@@ -213,13 +220,15 @@ footer .sig{font-family:var(--script);font-size:26px;color:var(--accent);letter-
 <div class="pane" id="pane-char">
   <h2 data-i="hChar">Nhân vật AI</h2><div class="rule"></div>
   <div class="char-card">
-    <img src="assets/huong-ai.jpg" alt="HUONG AI">
+    <img src="assets/poses/huong-wave.webp" alt="HUONG AI" style="background:var(--soft)">
     <div>
-      <div class="tg" data-i="charDefaultTag">Nhân vật mặc định</div>
+      <div class="tg" data-i="charDefaultTag">Trợ lý trình bày</div>
       <div class="nm">HUONG AI</div>
-      <div class="hint" style="margin:6px 0 0" data-i="charDefaultNote">HUONG AI xuất hiện trong khung trình bày bên phải video, chuyển động theo nhịp giọng đọc của bạn. Muốn dùng hình khác, tải ảnh bên dưới.</div>
+      <div class="hint" style="margin:6px 0 0" data-i="charDefaultNote">HUONG AI — trợ lý áo dài trắng — đứng trong khung hình và chuyển động theo nhịp giọng đọc của bạn. Chọn tư thế bên dưới, hoặc tải ảnh riêng để thay thế.</div>
     </div>
   </div>
+  <label class="small" data-i="poseL">Tư thế trợ lý</label>
+  <div class="pose-grid" id="poseGrid"></div>
   <label class="filebtn">🖼 <span data-i="uploadChar">Tải ảnh nhân vật khác (PNG tách nền đẹp nhất)</span><input type="file" id="charFile" accept="image/*"></label>
   <img id="charPreview" class="char-preview" alt="" hidden>
   <button class="mini" id="btnCharReset" style="margin-top:10px;padding:9px 14px" hidden data-i="charReset">↺ Dùng lại HUONG AI</button>
@@ -277,11 +286,13 @@ vi:{
  play:"▶ Xem cảnh này", playAll:"▶▶ Xem tất cả", stop:"■ Dừng",
  tabScenes:"Kịch bản", tabChar:"Nhân vật", tabStyle:"Hiển thị", tabExport:"Xuất video",
  hScenes:"Các cảnh & lời thoại",
- importPdf:"Nhập từ PDF", importCsv:"Nhập từ CSV", paste:"✍️ Dán kịch bản", addScene:"＋ Thêm cảnh",
- hintScenes:"Mỗi cảnh: 🎙 Ghi âm hoặc 📂 Tải audio giọng đọc của bạn; 🎞 Media nền nhận cả ẢNH và VIDEO (video tự tắt tiếng, làm phông chuyển động cho cảnh). Nhập PDF/CSV hoặc dán văn bản để thay kịch bản. Kịch bản tự lưu trên thiết bị.",
+ importVid:"Tải video lên", importPdf:"Nhập từ PDF", importCsv:"Nhập từ CSV", paste:"✍️ Dán kịch bản", addScene:"＋ Thêm cảnh",
+ hintScenes:"🎥 Tải video lên: mỗi video thành một cảnh, GIỮ NGUYÊN TIẾNG của video và HUONG AI thuyết minh theo. Mỗi cảnh: 🎙 Ghi âm hoặc 📂 Tải audio giọng đọc của bạn; 🎞 Media nền nhận cả ảnh và video làm phông. Kịch bản tự lưu trên thiết bị.",
  hChar:"Nhân vật AI",
- charDefaultTag:"Nhân vật mặc định",
- charDefaultNote:"HUONG AI xuất hiện trong khung trình bày bên phải video, chuyển động theo nhịp giọng đọc của bạn. Muốn dùng hình khác, tải ảnh bên dưới.",
+ charDefaultTag:"Trợ lý trình bày",
+ charDefaultNote:"HUONG AI — trợ lý áo dài trắng — đứng trong khung hình và chuyển động theo nhịp giọng đọc của bạn. Chọn tư thế bên dưới, hoặc tải ảnh riêng để thay thế.",
+ poseL:"Tư thế trợ lý",
+ poseNames:{present:"Trình bày",wave:"Vẫy chào",thumbsup:"Tán thành",walk:"Bước đi",desk:"Bàn làm việc",class:"Giảng đường"},
  uploadChar:"Tải ảnh nhân vật khác (PNG tách nền đẹp nhất)",
  charReset:"↺ Dùng lại HUONG AI",
  hintChar:"Ảnh PNG tách nền sẽ hiển thị dạng cắt rời đứng trên nền video; ảnh thường hiển thị trong khung trình bày bo góc như HUONG AI.",
@@ -302,6 +313,7 @@ vi:{
  tPdfReading:"Đang đọc tệp PDF...", tPdfNone:"Không tìm thấy văn bản trong PDF (có thể là bản scan ảnh)", tPdfErr:"Lỗi khi đọc tệp PDF", tPdfNet:"Cần kết nối mạng để đọc PDF",
  tPdfOk:n=>"Đã trích xuất "+n+" cảnh từ PDF", tCsvErr:"Không đọc được CSV", tCsvNoCol:"Không tìm thấy cột lời thoại trong CSV", tCsvOk:n=>"Đã nhập "+n+" cảnh từ CSV",
  tPastePrompt:"Dán kịch bản (mỗi đoạn cách nhau một dòng trống = một cảnh):", tPasteOk:n=>"Đã thêm "+n+" cảnh",
+ tVidLoading:"Đang xử lý video...", tVidOk:n=>"Đã thêm "+n+" cảnh từ video (giữ nguyên tiếng)", tVidErr:f=>"Không đọc được video \""+f+"\"",
  tAudioOk:(d,t)=>"Đã tải audio "+d+"s cho \""+t+"\"", tAudioErr:"Không đọc được tệp âm thanh này",
  tRecBusy:"Đang ghi cảnh khác — dừng trước đã", tRecOk:(d,t)=>"Đã ghi "+d+" giây cho \""+t+"\"", tRecErr:"Không xử lý được audio, thử ghi lại", tMicErr:"Không truy cập được micro — kiểm tra quyền micro của trình duyệt", tRecOn:"Đang ghi... đọc lời thoại rồi bấm ■ Dừng ghi",
  tMediaImg:t=>"Đã gắn ảnh nền cho \""+t+"\"", tMediaVid:t=>"Đã gắn video nền cho \""+t+"\"", tMediaErr:"Không đọc được tệp media",
@@ -314,11 +326,13 @@ en:{
  play:"▶ Play scene", playAll:"▶▶ Play all", stop:"■ Stop",
  tabScenes:"Script", tabChar:"Character", tabStyle:"Display", tabExport:"Export",
  hScenes:"Scenes & narration",
- importPdf:"Import PDF", importCsv:"Import CSV", paste:"✍️ Paste script", addScene:"＋ Add scene",
- hintScenes:"For each scene: 🎙 Record or 📂 Upload your narration audio; 🎞 Background media accepts both IMAGES and VIDEOS (videos are muted and used as a moving backdrop). Import PDF/CSV or paste text to replace the script. Your script autosaves on this device.",
+ importVid:"Upload video", importPdf:"Import PDF", importCsv:"Import CSV", paste:"✍️ Paste script", addScene:"＋ Add scene",
+ hintScenes:"🎥 Upload video: each video becomes a scene that KEEPS ITS OWN SOUND, with HUONG AI presenting along. Per scene: 🎙 Record or 📂 Upload narration audio; 🎞 Background media accepts images and videos as backdrop. Your script autosaves on this device.",
  hChar:"AI character",
- charDefaultTag:"Default character",
- charDefaultNote:"HUONG AI appears in a presenter frame on the right of the video and moves with your voice rhythm. To use another image, upload below.",
+ charDefaultTag:"Presenter assistant",
+ charDefaultNote:"HUONG AI — the white áo dài assistant — stands in the frame and moves with your narration rhythm. Pick a pose below, or upload your own image to replace her.",
+ poseL:"Assistant pose",
+ poseNames:{present:"Presenting",wave:"Waving",thumbsup:"Thumbs up",walk:"Walking",desk:"At desk",class:"Lecture hall"},
  uploadChar:"Upload another character image (transparent PNG works best)",
  charReset:"↺ Back to HUONG AI",
  hintChar:"A transparent PNG is drawn as a cut-out standing on the video; a regular photo is shown in a rounded presenter frame like HUONG AI.",
@@ -339,6 +353,7 @@ en:{
  tPdfReading:"Reading PDF...", tPdfNone:"No text found in PDF (may be a scanned image)", tPdfErr:"Error reading PDF", tPdfNet:"Internet connection required to read PDF",
  tPdfOk:n=>"Extracted "+n+" scenes from PDF", tCsvErr:"Could not read CSV", tCsvNoCol:"No narration column found in CSV", tCsvOk:n=>"Imported "+n+" scenes from CSV",
  tPastePrompt:"Paste your script (blank line between paragraphs = one scene):", tPasteOk:n=>"Added "+n+" scenes",
+ tVidLoading:"Processing video...", tVidOk:n=>"Added "+n+" scenes from video (sound kept)", tVidErr:f=>"Could not read video \""+f+"\"",
  tAudioOk:(d,t)=>"Loaded "+d+"s audio for \""+t+"\"", tAudioErr:"Could not read this audio file",
  tRecBusy:"Recording another scene — stop it first", tRecOk:(d,t)=>"Recorded "+d+"s for \""+t+"\"", tRecErr:"Could not process audio, try again", tMicErr:"Microphone unavailable — check browser permissions", tRecOn:"Recording... read the narration then tap ■ Stop",
  tMediaImg:t=>"Image background set for \""+t+"\"", tMediaVid:t=>"Video background set for \""+t+"\"", tMediaErr:"Could not read media file",
@@ -356,7 +371,9 @@ function applyLang(){
   });
   $('langVI').classList.toggle('on',lang==='vi');
   $('langEN').classList.toggle('on',lang==='en');
-  renderScenes(); drawFrame(curScene(),0,0);
+  renderScenes();
+  if(typeof renderPoseGrid==='function') renderPoseGrid();
+  drawFrame(curScene(),0,0);
   store.set('jmh-lang',lang);
 }
 
@@ -368,7 +385,7 @@ const store={
 
 /* ============ TRẠNG THÁI ============ */
 const $ = id => document.getElementById(id);
-const state = { scenes: [], cur: 0, charImg: null, charCut: false, recording: null, exporting: false };
+const state = { scenes: [], cur: 0, charImg: null, charCut: false, pose:'present', recording: null, exporting: false };
 let audioCtx = null;
 function ctx(){ if(!audioCtx) audioCtx = new (window.AudioContext||window.webkitAudioContext)(); if(audioCtx.state==='suspended') audioCtx.resume(); return audioCtx; }
 let uid = 1;
@@ -502,6 +519,34 @@ $('btnPaste').onclick=()=>{
   renderScenes(); saveScript(); toast(t('tPasteOk')(parts.length));
 };
 
+/* ============ NHẬP VIDEO (mỗi video = một cảnh, giữ nguyên tiếng) ============ */
+$('vidFiles').addEventListener('change', async e=>{
+  const files=[...e.target.files]; if(!files.length) return;
+  toast(t('tVidLoading'));
+  let n=0;
+  for(const f of files){
+    const url=URL.createObjectURL(f);
+    const v=document.createElement('video');
+    v.src=url; v.muted=true; v.playsInline=true; v.loop=true; v.preload='auto';
+    const ok=await new Promise(res=>{ v.onloadeddata=()=>res(true); v.onerror=()=>res(false); });
+    if(!ok || !v.videoWidth){ toast(t('tVidErr')(f.name)); URL.revokeObjectURL(url); continue; }
+    const s=newScene(f.name.replace(/\.[^.]+$/,''),'');
+    s.bgVid=v;
+    /* tách audio của video để HUONG AI nhép miệng theo và audio vào video xuất ra */
+    try{
+      const buf=await ctx().decodeAudioData(await f.arrayBuffer());
+      s.audioBuf=buf; s.dur=buf.duration;
+    }catch(err){ /* video không có tiếng → dùng độ dài video */ }
+    state.scenes.push(s); n++;
+  }
+  if(n){
+    state.cur=state.scenes.length-n;
+    renderScenes(); drawFrame(curScene(),0,0); saveScript();
+    toast(t('tVidOk')(n));
+  }
+  e.target.value='';
+});
+
 /* ============ GHI ÂM ============ */
 let mediaRec=null, recChunks=[];
 async function toggleRecord(s){
@@ -553,10 +598,31 @@ bgInput.addEventListener('change',()=>{
   }
 });
 
-/* ============ NHÂN VẬT: HUONG AI mặc định + ảnh tải lên ============ */
-const huongImg=new Image();
-huongImg.src='assets/huong-ai.jpg';
-huongImg.onload=()=>drawFrame(curScene(),0,0);
+/* ============ NHÂN VẬT: HUONG AI (5 tư thế) + ảnh tải lên ============ */
+const POSES=[
+  {id:'present', src:'assets/poses/huong-present.webp', cut:true},
+  {id:'wave',    src:'assets/poses/huong-wave.webp',    cut:true},
+  {id:'thumbsup',src:'assets/poses/huong-thumbsup.webp',cut:true},
+  {id:'walk',    src:'assets/poses/huong-walk.webp',    cut:true},
+  {id:'desk',    src:'assets/poses/huong-desk.webp',    cut:true},
+  {id:'class',   src:'assets/huong-ai.jpg',             cut:false}
+];
+const poseImgs={};
+POSES.forEach(p=>{
+  const im=new Image(); im.src=p.src;
+  im.onload=()=>{ if(state.pose===p.id) drawFrame(curScene(),0,0); };
+  poseImgs[p.id]=im;
+});
+function renderPoseGrid(){
+  const box=$('poseGrid'); if(!box) return; box.innerHTML='';
+  POSES.forEach(p=>{
+    const b=document.createElement('button');
+    b.className=state.pose===p.id?'on':'';
+    b.innerHTML='<img src="'+p.src+'" alt=""><span>'+((t('poseNames')||{})[p.id]||p.id)+'</span>';
+    b.onclick=()=>{ state.pose=p.id; store.set('jmh-pose',p.id); renderPoseGrid(); drawFrame(curScene(),0,0); };
+    box.appendChild(b);
+  });
+}
 const brandBadge=new Image();
 brandBadge.src='icons/icon-brand-512.png';
 brandBadge.onload=()=>drawFrame(curScene(),0,0);
@@ -713,16 +779,22 @@ function drawCharacter(g,tt,amp){
   g.save();
   g.translate(cx, H-14-bob);
   g.rotate(tilt);
-  if(state.charImg && state.charCut){
-    /* PNG tách nền: vẽ cắt rời */
-    const im=state.charImg;
+  /* chọn nguồn: ảnh tải lên > tư thế HUONG AI */
+  let im=null, cut=false, showLabel=false;
+  if(state.charImg){ im=state.charImg; cut=state.charCut; }
+  else{
+    const pose=POSES.find(p=>p.id===state.pose)||POSES[0];
+    const pi=poseImgs[pose.id];
+    if(pi && pi.complete && pi.naturalWidth){ im=pi; cut=pose.cut; showLabel=true; }
+  }
+  if(im && cut){
+    /* nhân vật tách nền: đứng trực tiếp trên khung hình */
     const h=H*0.86*size, w=h*(im.width/im.height);
     g.fillStyle='rgba(60,30,35,.28)';
-    g.beginPath(); g.ellipse(0,6,w*0.3,12,0,0,Math.PI*2); g.fill();
+    g.beginPath(); g.ellipse(0,6,w*0.32,12,0,0,Math.PI*2); g.fill();
     g.drawImage(im,-w/2,-h,w,h);
   }else{
-    /* HUONG AI (hoặc ảnh thường): khung trình bày bo góc */
-    const im=(state.charImg||((huongImg.complete&&huongImg.naturalWidth)?huongImg:null));
+    /* ảnh thường: khung trình bày bo góc */
     if(im){
       const h=H*0.72*size, w=h*0.68, r=18;
       g.save();
@@ -740,7 +812,7 @@ function drawCharacter(g,tt,amp){
       g.strokeStyle=V.accent; g.lineWidth=3;
       roundRect(g,-w/2,-h,w,h,r); g.stroke();
       /* thanh tên nhỏ — nằm gọn trên mép dưới khung */
-      if(!state.charImg){
+      if(showLabel){
         g.font='700 16px Georgia,serif';
         const label='HUONG AI';
         const lw=g.measureText(label).width+26;
@@ -950,6 +1022,8 @@ SETTING_IDS.forEach(id=>$(id).addEventListener('input',()=>{ saveSettings(); dra
 (function init(){
   const saved=store.get('jmh-lang');
   if(saved && I18N[saved]) lang=saved;
+  const savedPose=store.get('jmh-pose');
+  if(savedPose && POSES.some(p=>p.id===savedPose)) state.pose=savedPose;
   loadSettings();
   const loaded=loadScript();
   if(!loaded) SAMPLE.forEach(([a,b])=>state.scenes.push(newScene(a,b)));
