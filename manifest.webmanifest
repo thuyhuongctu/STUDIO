@@ -1,0 +1,33 @@
+{
+  "id": "/STUDIO/",
+  "name": "STUDIO · Je m'appelle Hương — Video Studio",
+  "short_name": "STUDIO LR",
+  "description": "Xưởng video AI của Je m'appelle Hương (Lecturer & Researcher): dựng video thuyết trình với nhân vật HUONG AI, ghi âm giọng đọc, xuất video ngay trên trình duyệt — không cần cài phần mềm.",
+  "start_url": "./?source=pwa",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f4efe9",
+  "theme_color": "#f4efe9",
+  "lang": "vi",
+  "icons": [
+    {
+      "src": "icons/icon-brand-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-brand-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

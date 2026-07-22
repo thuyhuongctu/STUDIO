@@ -1,0 +1,965 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#f4efe9" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#171315" media="(prefers-color-scheme: dark)">
+<meta name="description" content="STUDIO · Xưởng video AI của Je m'appelle Hương — dựng video thuyết trình với nhân vật HUONG AI, ghi âm giọng đọc, xuất video ngay trên trình duyệt.">
+<title>STUDIO · Je m'appelle Hương</title>
+<link rel="icon" href="icons/icon-brand-192.png">
+<link rel="apple-touch-icon" href="icons/icon-brand-192.png">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Great+Vibes&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>
+  if(window.pdfjsLib) pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+</script>
+<style>
+:root{
+  --paper:#f4efe9; --surface:#fffdfb; --soft:#f3e2e5; --line:#e2d9d0;
+  --ink:#20191b; --muted:#6d635f;
+  --accent:#9e3b4e; --accent-strong:#7f2e3f; --accent-ghost:rgba(158,59,78,.10);
+  --gold:#a9781f; --ok:#2f8f5b; --rec:#c14b3f;
+  --shadow:0 10px 30px rgba(32,25,27,.08);
+  --radius:18px;
+  --serif:Georgia,"Iowan Old Style","Times New Roman",serif;
+  --sans:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",sans-serif;
+  --script:'Great Vibes',cursive;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --paper:#171315; --surface:#201a1c; --soft:#2a1a1e; --line:#332a2c;
+    --ink:#ece5e2; --muted:#a99e99;
+    --accent:#d98a99; --accent-strong:#e5a5b1; --accent-ghost:rgba(217,138,153,.12);
+    --gold:#d9ad55; --ok:#5fbf8b; --rec:#e07a6e;
+    --shadow:0 10px 30px rgba(0,0,0,.35);
+  }
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html{scroll-behavior:smooth}
+html,body{background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.55}
+body{min-height:100dvh;position:relative}
+
+/* Bản đồ Việt Nam in mờ trên nền giao diện */
+.vn-map{position:fixed;top:50%;left:50%;transform:translate(-50%,-52%);height:min(88dvh,900px);width:auto;opacity:.05;pointer-events:none;z-index:0;color:var(--accent)}
+@media (max-width:700px){ .vn-map{height:78dvh;opacity:.06} }
+
+.wrap{position:relative;z-index:1;max-width:920px;margin:0 auto;padding:14px 14px calc(96px + env(safe-area-inset-bottom))}
+
+button{font-family:inherit;font-size:14px;border:none;cursor:pointer;border-radius:13px;transition:transform .06s ease, box-shadow .18s ease, background .18s ease}
+button:active{transform:scale(.985)}
+input,textarea,select{font-family:inherit;font-size:14px;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px;width:100%}
+textarea{resize:vertical;min-height:72px;line-height:1.6}
+input:focus,textarea:focus,select:focus,button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+
+/* ===== Header ===== */
+header{display:flex;align-items:center;gap:12px;padding:8px 2px 14px}
+.logo{width:52px;height:52px;flex:none;border-radius:50%;box-shadow:0 3px 14px rgba(158,59,78,.30);overflow:hidden;background:transparent}
+.logo img{width:100%;height:100%;display:block}
+.brand{flex:1;min-width:0}
+header h1{font-family:var(--script);font-size:clamp(23px,6.4vw,31px);font-weight:400;color:var(--accent);line-height:1.02;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+header .sub{font-size:9.5px;color:var(--muted);font-weight:700;letter-spacing:.16em;text-transform:uppercase;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.langswitch{display:flex;background:var(--surface);border:1px solid var(--line);border-radius:99px;padding:3px;flex:none;box-shadow:var(--shadow)}
+.langswitch button{padding:7px 14px;font-size:12px;font-weight:800;border-radius:99px;background:transparent;color:var(--muted);letter-spacing:.04em}
+.langswitch button.on{background:var(--accent);color:#fff}
+
+/* ===== Stage ===== */
+.stage-shell{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:10px;margin-bottom:12px;box-shadow:var(--shadow)}
+.film{position:relative;border-radius:12px;overflow:hidden;background:#0d0a0b}
+.film canvas{display:block;width:100%;height:auto}
+.timecode{position:absolute;top:10px;right:12px;font-family:var(--mono);font-size:11.5px;color:#fff;background:rgba(127,46,63,.88);padding:4px 10px;border-radius:7px;letter-spacing:.5px}
+.transport{display:flex;gap:8px;margin-top:10px}
+.transport button{flex:1;padding:13px 8px;font-weight:700;font-size:13.5px}
+.btn-accent{background:var(--accent);color:#fff;box-shadow:0 4px 14px rgba(158,59,78,.35)}
+.btn-accent:active{background:var(--accent-strong)}
+.btn-ghost{background:var(--soft);color:var(--accent);border:1px solid var(--line);font-weight:700}
+.btn-ok{background:var(--ok);color:#fff;box-shadow:0 4px 12px rgba(47,143,91,.3)}
+button:disabled{opacity:.4;cursor:not-allowed}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.55}}
+
+/* ===== Tabs ===== */
+.tabs{display:flex;gap:6px;margin:16px 0 12px}
+.tabs button{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:10px 4px;font-weight:700;font-size:12px;background:var(--surface);color:var(--muted);border:1px solid var(--line);letter-spacing:.02em}
+.tabs button .ic{font-size:17px;line-height:1}
+.tabs button.active{background:var(--accent);color:#fff;border-color:var(--accent-strong);box-shadow:0 4px 14px rgba(158,59,78,.30)}
+@media (max-width:700px){
+  .tabs{position:fixed;left:0;right:0;bottom:0;z-index:50;margin:0;gap:0;padding:8px 10px calc(8px + env(safe-area-inset-bottom));background:color-mix(in srgb,var(--surface) 88%,transparent);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-top:1px solid var(--line)}
+  .tabs button{border:none;background:transparent;border-radius:12px}
+  .tabs button.active{background:var(--accent);box-shadow:none}
+}
+
+.pane{display:none;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow)}
+.pane.show{display:block}
+.pane h2{font-family:var(--serif);font-size:17px;font-weight:700;margin-bottom:4px;color:var(--accent-strong)}
+.pane .rule{height:2px;width:44px;background:var(--gold);border-radius:2px;margin:0 0 14px}
+.hint{font-size:12.5px;color:var(--muted);margin:8px 0;line-height:1.65}
+.row{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+.row>*{flex:1;min-width:130px}
+label.small{display:block;font-size:10.5px;color:var(--muted);margin-bottom:5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
+
+/* ===== Scenes ===== */
+.scene{background:var(--paper);border:1px solid var(--line);border-radius:15px;padding:12px;margin-bottom:10px}
+.scene.current{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-ghost)}
+.scene-head{display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap}
+.scene-num{font-family:var(--mono);font-size:12px;color:var(--gold);font-weight:700;flex:none}
+.scene-head input{font-weight:600;font-size:13.5px;padding:7px 10px;flex:1;min-width:120px}
+.badge{flex:none;font-size:10.5px;padding:4px 10px;border-radius:99px;font-weight:700}
+.badge.has{background:rgba(47,143,91,.14);color:var(--ok)}
+.badge.no{background:var(--accent-ghost);color:var(--muted)}
+.scene textarea{font-size:13.5px;margin-bottom:9px}
+.scene-actions{display:flex;gap:6px;flex-wrap:wrap}
+.scene-actions button,.scene-actions label{padding:8px 11px;font-size:12px;font-weight:600;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer}
+.mini{background:var(--surface);border:1px solid var(--line);color:var(--ink)}
+.mini.rec-on{background:var(--rec);color:#fff;border-color:var(--rec);animation:pulse 1s infinite}
+.mini-file{background:var(--surface);border:1px solid var(--line);color:var(--accent)}
+.mini-file input{display:none}
+
+.filebtn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:13px;background:var(--soft);border:1.5px dashed var(--accent);border-radius:13px;color:var(--accent);font-weight:700;font-size:13px;width:100%;cursor:pointer}
+.filebtn input{display:none}
+img.char-preview{max-width:170px;border-radius:14px;border:1px solid var(--line);display:block;margin-top:10px;box-shadow:var(--shadow)}
+.char-card{display:flex;gap:14px;align-items:flex-start;background:var(--paper);border:1px solid var(--line);border-radius:15px;padding:12px;margin-bottom:12px}
+.char-card img{width:96px;border-radius:12px;flex:none;box-shadow:var(--shadow)}
+.char-card .nm{font-family:var(--serif);font-weight:700;color:var(--accent-strong);font-size:15px}
+.char-card .tg{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);font-weight:800;margin-bottom:5px}
+
+.progress{height:8px;background:var(--soft);border-radius:99px;overflow:hidden;margin:10px 0;display:none}
+.progress .bar{height:100%;width:0;background:linear-gradient(90deg,var(--accent),var(--gold));transition:width .2s}
+.export-note{font-size:12.5px;color:var(--muted);line-height:1.65}
+a.dl{display:block;text-align:center;background:var(--ok);color:#fff;font-weight:800;padding:14px;border-radius:13px;text-decoration:none;margin-top:10px;box-shadow:0 4px 12px rgba(47,143,91,.3)}
+.toast{position:fixed;bottom:calc(84px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);background:var(--surface);border:1px solid var(--accent);color:var(--ink);padding:11px 17px;border-radius:13px;font-size:13px;font-weight:600;opacity:0;pointer-events:none;transition:opacity .25s;z-index:99;max-width:92vw;text-align:center;box-shadow:0 10px 28px rgba(158,59,78,.30)}
+.toast.show{opacity:1}
+footer{margin-top:22px;text-align:center;font-size:10.5px;color:var(--muted);letter-spacing:.14em}
+footer .sig{font-family:var(--script);font-size:26px;color:var(--accent);letter-spacing:0}
+@media (prefers-reduced-motion: reduce){.mini.rec-on{animation:none}}
+</style>
+</head>
+<body>
+
+<!-- Bản đồ Việt Nam in mờ (kèm quần đảo Hoàng Sa & Trường Sa) -->
+<svg class="vn-map" viewBox="0 0 540 640" aria-hidden="true" focusable="false">
+  <g fill="currentColor">
+    <path id="vnMainland" d="M5.6,64 L32,56 52,50 80,60 112,36 134,26 160,44 188,44 200,84 236,98
+      212,124 188,136 160,160 156,200 148,208 180,252 204,284 224,300 248,316 272,344
+      282,376 292,408 292,444 288,472 280,504 252,524 200,544 184,568 168,580 140,600 112,616
+      114,592 112,564 98,544 124,524 168,522 154,494 176,490 220,466 216,420 224,384 212,352
+      184,318 180,296 150,244 128,216 76,190 114,166 96,136 46,126 36,92 Z"/>
+    <!-- Phú Quốc & Côn Đảo -->
+    <ellipse cx="80" cy="552" rx="7" ry="10"/>
+    <circle cx="184" cy="614" r="4.5"/>
+    <!-- Quần đảo Hoàng Sa -->
+    <g>
+      <circle cx="388" cy="300" r="3"/><circle cx="398" cy="308" r="2.4"/><circle cx="380" cy="311" r="2"/><circle cx="392" cy="318" r="2"/>
+      <text x="374" y="338" font-size="13" font-family="Georgia,serif" opacity=".9">Hoàng Sa</text>
+    </g>
+    <!-- Quần đảo Trường Sa -->
+    <g>
+      <circle cx="452" cy="560" r="2.6"/><circle cx="470" cy="548" r="2.2"/><circle cx="484" cy="566" r="2.8"/><circle cx="462" cy="578" r="2"/><circle cx="496" cy="552" r="2"/><circle cx="440" cy="590" r="2.2"/>
+      <text x="428" y="612" font-size="13" font-family="Georgia,serif" opacity=".9">Trường Sa</text>
+    </g>
+  </g>
+</svg>
+
+<div class="wrap">
+
+<header>
+  <div class="logo"><img src="icons/icon-brand-192.png" alt="Je m'appelle Hương — Lecturer &amp; Researcher"></div>
+  <div class="brand">
+    <h1>Je m'appelle Hương</h1>
+    <div class="sub" data-i="tagline">Lecturer &amp; Researcher · Studio</div>
+  </div>
+  <div class="langswitch">
+    <button id="langVI" class="on">VI</button>
+    <button id="langEN">EN</button>
+  </div>
+</header>
+
+<div class="stage-shell">
+  <div class="film">
+    <canvas id="stage" width="1280" height="720"></canvas>
+    <div class="timecode" id="tc">00:00.0</div>
+  </div>
+  <div class="transport">
+    <button class="btn-accent" id="btnPlay" data-i="play">▶ Xem cảnh này</button>
+    <button class="btn-ghost" id="btnPlayAll" data-i="playAll">▶▶ Xem tất cả</button>
+    <button class="btn-ghost" id="btnStop" data-i="stop">■ Dừng</button>
+  </div>
+</div>
+
+<div class="tabs">
+  <button data-pane="scenes" class="active"><span class="ic">🎬</span><span data-i="tabScenes">Kịch bản</span></button>
+  <button data-pane="char"><span class="ic">👩‍🏫</span><span data-i="tabChar">Nhân vật</span></button>
+  <button data-pane="style"><span class="ic">🎨</span><span data-i="tabStyle">Hiển thị</span></button>
+  <button data-pane="export"><span class="ic">⬇️</span><span data-i="tabExport">Xuất video</span></button>
+</div>
+
+<!-- SCENES -->
+<div class="pane show" id="pane-scenes">
+  <h2 data-i="hScenes">Các cảnh &amp; lời thoại</h2><div class="rule"></div>
+  <div class="row">
+    <label class="filebtn">📕 <span data-i="importPdf">Nhập từ PDF</span><input type="file" id="pdfFile" accept=".pdf"></label>
+    <label class="filebtn">📄 <span data-i="importCsv">Nhập từ CSV</span><input type="file" id="csvFile" accept=".csv,.txt,text/csv,text/plain"></label>
+    <button class="btn-ghost" id="btnPaste" style="padding:13px" data-i="paste">✍️ Dán kịch bản</button>
+  </div>
+  <div class="hint" data-i="hintScenes"></div>
+  <div id="sceneList"></div>
+  <button class="btn-ghost" id="btnAddScene" style="width:100%;padding:12px" data-i="addScene">＋ Thêm cảnh</button>
+</div>
+
+<!-- CHARACTER -->
+<div class="pane" id="pane-char">
+  <h2 data-i="hChar">Nhân vật AI</h2><div class="rule"></div>
+  <div class="char-card">
+    <img src="assets/huong-ai.jpg" alt="HUONG AI">
+    <div>
+      <div class="tg" data-i="charDefaultTag">Nhân vật mặc định</div>
+      <div class="nm">HUONG AI</div>
+      <div class="hint" style="margin:6px 0 0" data-i="charDefaultNote">HUONG AI xuất hiện trong khung trình bày bên phải video, chuyển động theo nhịp giọng đọc của bạn. Muốn dùng hình khác, tải ảnh bên dưới.</div>
+    </div>
+  </div>
+  <label class="filebtn">🖼 <span data-i="uploadChar">Tải ảnh nhân vật khác (PNG tách nền đẹp nhất)</span><input type="file" id="charFile" accept="image/*"></label>
+  <img id="charPreview" class="char-preview" alt="" hidden>
+  <button class="mini" id="btnCharReset" style="margin-top:10px;padding:9px 14px" hidden data-i="charReset">↺ Dùng lại HUONG AI</button>
+  <div class="hint" data-i="hintChar"></div>
+  <div class="row">
+    <div><label class="small" data-i="charSize">Kích cỡ nhân vật</label><input type="range" id="charSize" min="40" max="100" value="78"></div>
+    <div><label class="small" data-i="charX">Vị trí ngang</label><input type="range" id="charX" min="0" max="100" value="78"></div>
+  </div>
+</div>
+
+<!-- DISPLAY -->
+<div class="pane" id="pane-style">
+  <h2 data-i="hStyle">Hiển thị trên video</h2><div class="rule"></div>
+  <div class="row">
+    <div><label class="small" data-i="vidTitleL">Tiêu đề video</label><input id="vidTitle" value="CHỐNG THAM NHŨNG TRONG KỶ NGUYÊN SỐ"></div>
+    <div><label class="small" data-i="vidBrandL">Dòng thương hiệu</label><input id="vidBrand" value="Je m'appelle Hương · Lecturer &amp; Researcher"></div>
+  </div>
+  <div class="row">
+    <div><label class="small" data-i="subL">Phụ đề lời thoại</label><select id="optSub"><option value="1" selected data-i="yes">Có</option><option value="0" data-i="no">Không</option></select></div>
+    <div><label class="small" data-i="durL">Giây/cảnh khi chưa có audio</label><input type="number" id="optDur" min="2" max="60" value="6"></div>
+    <div><label class="small" data-i="logoL">Logo LR trên video</label><select id="optLogo"><option value="1" selected data-i="yes">Có</option><option value="0" data-i="no">Không</option></select></div>
+    <div><label class="small" data-i="mapL">Bản đồ Việt Nam in mờ</label><select id="optMap"><option value="1" selected data-i="yes">Có</option><option value="0" data-i="no">Không</option></select></div>
+  </div>
+  <div class="hint" data-i="hintTts"></div>
+  <div class="row">
+    <select id="ttsVoice"><option value="" data-i="ttsPh">— Giọng máy tiếng Việt (nếu thiết bị có) —</option></select>
+    <button class="btn-ghost" id="btnTtsTest" style="padding:11px" data-i="ttsTest">🔈 Nghe thử cảnh hiện tại</button>
+  </div>
+</div>
+
+<!-- EXPORT -->
+<div class="pane" id="pane-export">
+  <h2 data-i="hExport">Xuất video hoàn chỉnh</h2><div class="rule"></div>
+  <p class="export-note" data-i="expNote"></p>
+  <div class="progress" id="expProg"><div class="bar" id="expBar"></div></div>
+  <button class="btn-ok" id="btnExport" style="width:100%;padding:14px;font-weight:800;font-size:15px" data-i="expBtn">🎬 Dựng &amp; tải video</button>
+  <div id="dlBox"></div>
+  <p class="export-note" style="margin-top:10px" data-i="expFormat"></p>
+</div>
+
+<footer>
+  <div class="sig">Je m'appelle Hương</div>
+  <div>LECTURER &amp; RESEARCHER · STUDIO</div>
+</footer>
+
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+/* ============ SONG NGỮ VI / EN ============ */
+const I18N = {
+vi:{
+ tagline:"Lecturer & Researcher · Xưởng phim",
+ play:"▶ Xem cảnh này", playAll:"▶▶ Xem tất cả", stop:"■ Dừng",
+ tabScenes:"Kịch bản", tabChar:"Nhân vật", tabStyle:"Hiển thị", tabExport:"Xuất video",
+ hScenes:"Các cảnh & lời thoại",
+ importPdf:"Nhập từ PDF", importCsv:"Nhập từ CSV", paste:"✍️ Dán kịch bản", addScene:"＋ Thêm cảnh",
+ hintScenes:"Mỗi cảnh: 🎙 Ghi âm hoặc 📂 Tải audio giọng đọc của bạn; 🎞 Media nền nhận cả ẢNH và VIDEO (video tự tắt tiếng, làm phông chuyển động cho cảnh). Nhập PDF/CSV hoặc dán văn bản để thay kịch bản. Kịch bản tự lưu trên thiết bị.",
+ hChar:"Nhân vật AI",
+ charDefaultTag:"Nhân vật mặc định",
+ charDefaultNote:"HUONG AI xuất hiện trong khung trình bày bên phải video, chuyển động theo nhịp giọng đọc của bạn. Muốn dùng hình khác, tải ảnh bên dưới.",
+ uploadChar:"Tải ảnh nhân vật khác (PNG tách nền đẹp nhất)",
+ charReset:"↺ Dùng lại HUONG AI",
+ hintChar:"Ảnh PNG tách nền sẽ hiển thị dạng cắt rời đứng trên nền video; ảnh thường hiển thị trong khung trình bày bo góc như HUONG AI.",
+ charSize:"Kích cỡ nhân vật", charX:"Vị trí ngang",
+ hStyle:"Hiển thị trên video",
+ vidTitleL:"Tiêu đề video", vidBrandL:"Dòng thương hiệu",
+ subL:"Phụ đề lời thoại", durL:"Giây/cảnh khi chưa có audio", logoL:"Logo LR trên video", mapL:"Bản đồ Việt Nam in mờ",
+ yes:"Có", no:"Không",
+ hintTts:"Nghe thử bằng giọng máy (chỉ để duyệt kịch bản — video xuất ra dùng audio bạn ghi/tải lên):",
+ ttsPh:"— Giọng máy tiếng Việt (nếu thiết bị có) —", ttsTest:"🔈 Nghe thử cảnh hiện tại",
+ hExport:"Xuất video hoàn chỉnh",
+ expNote:"Bấm nút bên dưới và giữ nguyên trang — công cụ phát lần lượt toàn bộ cảnh và ghi thành một file video kèm audio của bạn. Cảnh chưa có audio: dùng độ dài video nền (nếu có) hoặc số giây đã đặt.",
+ expBtn:"🎬 Dựng & tải video",
+ expFormat:"Định dạng: MP4 trên iPhone/iPad đời mới, WebM trên Android/máy tính (cần MP4 thì chuyển nhanh bằng CapCut). Mẹo: mở trang này từ màn hình chính (Thêm vào MH chính) để dùng như app.",
+ sel:"👁 Chọn", rec:"🎙 Ghi âm", recStop:"■ Dừng ghi", upAudio:"📂 Tải audio", hear:"🔊 Nghe lại", media:"🎞 Media nền", del:"🗑",
+ noAudio:"chưa có audio", bgImg:"🖼 ảnh nền", bgVid:"🎞 video nền",
+ scene:"CẢNH", building:"DỰNG",
+ tPdfReading:"Đang đọc tệp PDF...", tPdfNone:"Không tìm thấy văn bản trong PDF (có thể là bản scan ảnh)", tPdfErr:"Lỗi khi đọc tệp PDF", tPdfNet:"Cần kết nối mạng để đọc PDF",
+ tPdfOk:n=>"Đã trích xuất "+n+" cảnh từ PDF", tCsvErr:"Không đọc được CSV", tCsvNoCol:"Không tìm thấy cột lời thoại trong CSV", tCsvOk:n=>"Đã nhập "+n+" cảnh từ CSV",
+ tPastePrompt:"Dán kịch bản (mỗi đoạn cách nhau một dòng trống = một cảnh):", tPasteOk:n=>"Đã thêm "+n+" cảnh",
+ tAudioOk:(d,t)=>"Đã tải audio "+d+"s cho \""+t+"\"", tAudioErr:"Không đọc được tệp âm thanh này",
+ tRecBusy:"Đang ghi cảnh khác — dừng trước đã", tRecOk:(d,t)=>"Đã ghi "+d+" giây cho \""+t+"\"", tRecErr:"Không xử lý được audio, thử ghi lại", tMicErr:"Không truy cập được micro — kiểm tra quyền micro của trình duyệt", tRecOn:"Đang ghi... đọc lời thoại rồi bấm ■ Dừng ghi",
+ tMediaImg:t=>"Đã gắn ảnh nền cho \""+t+"\"", tMediaVid:t=>"Đã gắn video nền cho \""+t+"\"", tMediaErr:"Không đọc được tệp media",
+ tCharOk:"Đã tải ảnh nhân vật", tCharReset:"Đã trở lại nhân vật HUONG AI", tNoText:"Chưa có lời thoại", tNoTts:"Thiết bị không hỗ trợ giọng máy",
+ tNoScene:"Chưa có cảnh nào", tNoRec:"Trình duyệt này chưa hỗ trợ ghi video — thử Chrome/Safari mới",
+ tDelQ:"Xóa cảnh này?", tDone:"Dựng xong! Bấm nút xanh để tải về.", dl:(mb,ext)=>"⬇ Tải video ("+mb+" MB · ."+ext+")"
+},
+en:{
+ tagline:"Lecturer & Researcher · Studio",
+ play:"▶ Play scene", playAll:"▶▶ Play all", stop:"■ Stop",
+ tabScenes:"Script", tabChar:"Character", tabStyle:"Display", tabExport:"Export",
+ hScenes:"Scenes & narration",
+ importPdf:"Import PDF", importCsv:"Import CSV", paste:"✍️ Paste script", addScene:"＋ Add scene",
+ hintScenes:"For each scene: 🎙 Record or 📂 Upload your narration audio; 🎞 Background media accepts both IMAGES and VIDEOS (videos are muted and used as a moving backdrop). Import PDF/CSV or paste text to replace the script. Your script autosaves on this device.",
+ hChar:"AI character",
+ charDefaultTag:"Default character",
+ charDefaultNote:"HUONG AI appears in a presenter frame on the right of the video and moves with your voice rhythm. To use another image, upload below.",
+ uploadChar:"Upload another character image (transparent PNG works best)",
+ charReset:"↺ Back to HUONG AI",
+ hintChar:"A transparent PNG is drawn as a cut-out standing on the video; a regular photo is shown in a rounded presenter frame like HUONG AI.",
+ charSize:"Character size", charX:"Horizontal position",
+ hStyle:"On-video display",
+ vidTitleL:"Video title", vidBrandL:"Brand line",
+ subL:"Subtitles", durL:"Seconds/scene without audio", logoL:"LR logo on video", mapL:"Faded Vietnam map",
+ yes:"Yes", no:"No",
+ hintTts:"Preview with device TTS (drafting only — the exported video uses the audio you record/upload):",
+ ttsPh:"— Vietnamese TTS voice (if available) —", ttsTest:"🔈 Preview current scene",
+ hExport:"Export final video",
+ expNote:"Tap the button below and keep this page open — all scenes play in sequence and are recorded into one video with your audio. Scenes without audio use the background video length (if any) or the seconds you set.",
+ expBtn:"🎬 Render & download",
+ expFormat:"Format: MP4 on recent iPhone/iPad, WebM on Android/desktop (convert to MP4 quickly with CapCut if needed). Tip: add this page to your home screen to use it like an app.",
+ sel:"👁 Select", rec:"🎙 Record", recStop:"■ Stop", upAudio:"📂 Upload audio", hear:"🔊 Play back", media:"🎞 Background", del:"🗑",
+ noAudio:"no audio yet", bgImg:"🖼 image bg", bgVid:"🎞 video bg",
+ scene:"SCENE", building:"RENDERING",
+ tPdfReading:"Reading PDF...", tPdfNone:"No text found in PDF (may be a scanned image)", tPdfErr:"Error reading PDF", tPdfNet:"Internet connection required to read PDF",
+ tPdfOk:n=>"Extracted "+n+" scenes from PDF", tCsvErr:"Could not read CSV", tCsvNoCol:"No narration column found in CSV", tCsvOk:n=>"Imported "+n+" scenes from CSV",
+ tPastePrompt:"Paste your script (blank line between paragraphs = one scene):", tPasteOk:n=>"Added "+n+" scenes",
+ tAudioOk:(d,t)=>"Loaded "+d+"s audio for \""+t+"\"", tAudioErr:"Could not read this audio file",
+ tRecBusy:"Recording another scene — stop it first", tRecOk:(d,t)=>"Recorded "+d+"s for \""+t+"\"", tRecErr:"Could not process audio, try again", tMicErr:"Microphone unavailable — check browser permissions", tRecOn:"Recording... read the narration then tap ■ Stop",
+ tMediaImg:t=>"Image background set for \""+t+"\"", tMediaVid:t=>"Video background set for \""+t+"\"", tMediaErr:"Could not read media file",
+ tCharOk:"Character image loaded", tCharReset:"Back to HUONG AI", tNoText:"No narration text yet", tNoTts:"TTS not supported on this device",
+ tNoScene:"No scenes yet", tNoRec:"This browser can't record video — try recent Chrome/Safari",
+ tDelQ:"Delete this scene?", tDone:"Done! Tap the green button to download.", dl:(mb,ext)=>"⬇ Download video ("+mb+" MB · ."+ext+")"
+}};
+let lang='vi';
+function t(k){ return I18N[lang][k]; }
+function applyLang(){
+  document.documentElement.lang=lang;
+  document.querySelectorAll('[data-i]').forEach(el=>{
+    const v=I18N[lang][el.getAttribute('data-i')];
+    if(typeof v==='string') el.innerHTML=v.replace(/&/g,'&amp;').replace(/&amp;amp;/g,'&amp;');
+  });
+  $('langVI').classList.toggle('on',lang==='vi');
+  $('langEN').classList.toggle('on',lang==='en');
+  renderScenes(); drawFrame(curScene(),0,0);
+  store.set('jmh-lang',lang);
+}
+
+/* ============ LƯU TRỮ (localStorage) ============ */
+const store={
+  get(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } },
+  set(k,v){ try{ localStorage.setItem(k,v); }catch(e){} }
+};
+
+/* ============ TRẠNG THÁI ============ */
+const $ = id => document.getElementById(id);
+const state = { scenes: [], cur: 0, charImg: null, charCut: false, recording: null, exporting: false };
+let audioCtx = null;
+function ctx(){ if(!audioCtx) audioCtx = new (window.AudioContext||window.webkitAudioContext)(); if(audioCtx.state==='suspended') audioCtx.resume(); return audioCtx; }
+let uid = 1;
+function toast(msg){ const el=$('toast'); el.textContent=msg; el.classList.add('show'); clearTimeout(el._t); el._t=setTimeout(()=>el.classList.remove('show'),2600); }
+
+const SAMPLE = [
+ ["Mở đầu","Kính chào quý vị và các bạn. Tôi là HUONG AI, trợ lý trình bày của Je m'appelle Hương. Hôm nay, chúng ta sẽ cùng thảo luận về một chủ đề mang tính thời đại: 'Chống tham nhũng trong kỷ nguyên số'. Đây không chỉ là câu chuyện về phát hiện sai phạm, mà là về việc thiết kế một hệ thống liêm chính bằng công nghệ, nơi mà mọi quyền lực đều để lại dấu vết."],
+ ["Tái cấu trúc quyền lực","Chuyển đổi số thực chất là sự thay đổi về bản chất cách thức vận hành quyền lực. Tham nhũng truyền thống thường ẩn mình sau những xấp hồ sơ và sự thiếu minh bạch của quy trình 'xin - cho'. Nhưng trong kỷ nguyên số, chúng ta chuyển dịch sang quản trị bằng dữ liệu và thuật toán. Tuy nhiên, thách thức mới cũng nảy sinh khi tham nhũng có thể biến tướng thành quyền truy cập và thao túng dữ liệu hệ thống."],
+ ["Phân tích đại án","Hãy nhìn vào thực tiễn các đại án gần đây như Việt Á, Vạn Thịnh Phát hay Phúc Sơn. Những con số kỷ lục về tài sản thất thoát và số lượng bị can bị khởi tố trong năm 2024 — cụ thể là hơn 11.000 bị can — cho thấy năng lực quét và phát hiện của các cơ quan chức năng đã được nâng tầm nhờ các công cụ kiểm soát hiện đại. Dấu vết số chính là bằng chứng đanh thép nhất không thể chối cãi."],
+ ["Đề án 06 & giải pháp","Đề án 06 và Cơ sở dữ liệu quốc gia về dân cư chính là nền tảng cốt lõi của 'Lồng công nghệ'. Khi dữ liệu dân cư liên thông với thuế, ngân hàng và đất đai, chúng ta tạo ra một hệ sinh thái minh bạch giúp thực hiện mục tiêu: Không thể tham nhũng và Không dám tham nhũng."],
+ ["Kết luận","Tổng kết lại, bảo vệ nền tảng tư tưởng của Đảng trong cuộc chiến chống tham nhũng không chỉ bằng lý luận suông, mà bằng hành động thực tiễn và kết quả đo lường được. Chống tham nhũng mạnh mẽ chính là minh chứng cho năng lực tự điều chỉnh và sức sống của chế độ. Xin trân trọng cảm ơn sự theo dõi của quý vị."]
+];
+function newScene(title,text){ return {id:uid++, title:title||'Scene', text:text||'', audioUrl:null, audioBuf:null, dur:0, bgImg:null, bgVid:null}; }
+
+/* ============ DANH SÁCH CẢNH ============ */
+function renderScenes(){
+  const box=$('sceneList'); if(!box) return; box.innerHTML='';
+  state.scenes.forEach((s,i)=>{
+    const div=document.createElement('div');
+    div.className='scene'+(i===state.cur?' current':'');
+    const mediaBadge = s.bgVid?('<span class="badge has">'+t('bgVid')+'</span>'):(s.bgImg?('<span class="badge has">'+t('bgImg')+'</span>'):'');
+    div.innerHTML=`
+      <div class="scene-head">
+        <span class="scene-num">${String(i+1).padStart(2,'0')}</span>
+        <input value="${esc(s.title)}" data-f="title">
+        <span class="badge ${s.audioBuf?'has':'no'}">${s.audioBuf?('🎙 '+s.dur.toFixed(1)+'s'):t('noAudio')}</span>
+        ${mediaBadge}
+      </div>
+      <textarea data-f="text">${esc(s.text)}</textarea>
+      <div class="scene-actions">
+        <button class="mini" data-a="sel">${t('sel')}</button>
+        <button class="mini ${state.recording===s.id?'rec-on':''}" data-a="rec">${state.recording===s.id?t('recStop'):t('rec')}</button>
+        <label class="mini-file">${t('upAudio')}<input type="file" accept="audio/*" data-a="upload"></label>
+        <button class="mini" data-a="hear" ${s.audioBuf?'':'disabled'}>${t('hear')}</button>
+        <button class="mini" data-a="bg">${t('media')}</button>
+        <button class="mini" data-a="up" ${i===0?'disabled':''}>↑</button>
+        <button class="mini" data-a="down" ${i===state.scenes.length-1?'disabled':''}>↓</button>
+        <button class="mini" data-a="del">${t('del')}</button>
+      </div>`;
+    div.querySelector('[data-f=title]').addEventListener('input',e=>{s.title=e.target.value; saveScript();});
+    div.querySelector('[data-f=text]').addEventListener('input',e=>{s.text=e.target.value; saveScript(); if(i===state.cur)drawFrame(s,0,0);});
+    div.querySelector('input[data-a="upload"]').addEventListener('change', async ev=>{
+      const f=ev.target.files[0]; if(!f) return;
+      try{
+        const decoded=await ctx().decodeAudioData(await f.arrayBuffer());
+        if(s.audioUrl) URL.revokeObjectURL(s.audioUrl);
+        s.audioUrl=URL.createObjectURL(f); s.audioBuf=decoded; s.dur=decoded.duration;
+        toast(t('tAudioOk')(s.dur.toFixed(1),s.title));
+        renderScenes(); drawFrame(s,0,0);
+      }catch(err){ toast(t('tAudioErr')); }
+    });
+    div.addEventListener('click',e=>{
+      const a=e.target.getAttribute('data-a'); if(!a||a==='upload') return;
+      if(a==='sel'){ state.cur=i; renderScenes(); drawFrame(s,0,0); }
+      if(a==='rec') toggleRecord(s);
+      if(a==='bg') pickSceneMedia(s,i);
+      if(a==='hear'){ state.cur=i; renderScenes(); playScene(i,false); }
+      if(a==='up'){ [state.scenes[i-1],state.scenes[i]]=[state.scenes[i],state.scenes[i-1]]; state.cur=i-1; renderScenes(); saveScript(); }
+      if(a==='down'){ [state.scenes[i+1],state.scenes[i]]=[state.scenes[i],state.scenes[i+1]]; state.cur=i+1; renderScenes(); saveScript(); }
+      if(a==='del'){ if(confirm(t('tDelQ'))){ state.scenes.splice(i,1); if(state.cur>=state.scenes.length)state.cur=Math.max(0,state.scenes.length-1); renderScenes(); saveScript(); } }
+    });
+    box.appendChild(div);
+  });
+}
+function esc(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;'); }
+$('btnAddScene').onclick=()=>{ state.scenes.push(newScene((lang==='vi'?'Cảnh ':'Scene ')+(state.scenes.length+1),'')); renderScenes(); saveScript(); };
+
+/* ============ NHẬP PDF ============ */
+$('pdfFile').addEventListener('change', async e=>{
+  const f=e.target.files[0]; if(!f) return;
+  if(!window.pdfjsLib){ toast(t('tPdfNet')); e.target.value=''; return; }
+  toast(t('tPdfReading'));
+  try{
+    const pdf=await pdfjsLib.getDocument({data:await f.arrayBuffer()}).promise;
+    let fullText='';
+    for(let i=1;i<=pdf.numPages;i++){
+      const page=await pdf.getPage(i);
+      const tc=await page.getTextContent();
+      fullText+=tc.items.map(it=>it.str).join(' ')+'\n\n';
+    }
+    const paragraphs=fullText.split(/\r?\n\s*\r?\n/).map(p=>p.trim()).filter(p=>p.length>10);
+    if(!paragraphs.length){ toast(t('tPdfNone')); return; }
+    state.scenes=[];
+    paragraphs.forEach((p,idx)=>{
+      let tw=p.split(' ').slice(0,4).join(' ');
+      if(tw.length>30) tw=tw.substring(0,30)+'...';
+      state.scenes.push(newScene(tw||((lang==='vi'?'Phần ':'Part ')+(idx+1)),p));
+    });
+    state.cur=0; renderScenes(); drawFrame(state.scenes[0],0,0); saveScript();
+    toast(t('tPdfOk')(state.scenes.length));
+  }catch(err){ toast(t('tPdfErr')); }
+  e.target.value='';
+});
+
+/* ============ NHẬP CSV ============ */
+$('csvFile').addEventListener('change', async e=>{
+  const f=e.target.files[0]; if(!f) return;
+  const rows=parseCSV(await f.text());
+  if(rows.length<2){ toast(t('tCsvErr')); return; }
+  const head=rows[0].map(h=>h.toLowerCase());
+  const iText=head.findIndex(h=>/thoại|thoai|script|text|nội dung|noi dung|loi|narration/.test(h));
+  const iTitle=head.findIndex(h=>/tiêu đề|tieu de|title|tên cảnh|ten canh|cảnh|canh|scene/.test(h));
+  if(iText<0){ toast(t('tCsvNoCol')); return; }
+  state.scenes=[];
+  rows.slice(1).forEach((r,k)=>{
+    const x=(r[iText]||'').trim(); if(!x) return;
+    state.scenes.push(newScene(iTitle>=0&&r[iTitle]?r[iTitle].trim():((lang==='vi'?'Cảnh ':'Scene ')+(k+1)),x));
+  });
+  state.cur=0; renderScenes(); drawFrame(state.scenes[0],0,0); saveScript();
+  toast(t('tCsvOk')(state.scenes.length));
+  e.target.value='';
+});
+function parseCSV(txt){
+  const rows=[]; let row=[], cell='', q=false;
+  for(let i=0;i<txt.length;i++){
+    const c=txt[i];
+    if(q){ if(c==='"'){ if(txt[i+1]==='"'){cell+='"';i++;} else q=false; } else cell+=c; }
+    else if(c==='"') q=true;
+    else if(c===','){ row.push(cell); cell=''; }
+    else if(c==='\n'||c==='\r'){ if(cell!==''||row.length){row.push(cell);rows.push(row);row=[];cell='';} if(c==='\r'&&txt[i+1]==='\n')i++; }
+    else cell+=c;
+  }
+  if(cell!==''||row.length){row.push(cell);rows.push(row);}
+  return rows;
+}
+$('btnPaste').onclick=()=>{
+  const txt=prompt(t('tPastePrompt'));
+  if(!txt) return;
+  const parts=txt.split(/\n\s*\n/).map(p=>p.trim()).filter(Boolean);
+  parts.forEach(p=> state.scenes.push(newScene((lang==='vi'?'Cảnh ':'Scene ')+(state.scenes.length+1), p.replace(/\n/g,' '))));
+  renderScenes(); saveScript(); toast(t('tPasteOk')(parts.length));
+};
+
+/* ============ GHI ÂM ============ */
+let mediaRec=null, recChunks=[];
+async function toggleRecord(s){
+  if(state.recording===s.id){ mediaRec&&mediaRec.stop(); return; }
+  if(state.recording){ toast(t('tRecBusy')); return; }
+  try{
+    const stream=await navigator.mediaDevices.getUserMedia({audio:true});
+    recChunks=[];
+    mediaRec=new MediaRecorder(stream);
+    mediaRec.ondataavailable=e=>{ if(e.data.size) recChunks.push(e.data); };
+    mediaRec.onstop=async ()=>{
+      stream.getTracks().forEach(x=>x.stop());
+      state.recording=null;
+      const blob=new Blob(recChunks,{type:mediaRec.mimeType||'audio/webm'});
+      try{
+        const buf=await ctx().decodeAudioData(await blob.arrayBuffer());
+        if(s.audioUrl) URL.revokeObjectURL(s.audioUrl);
+        s.audioUrl=URL.createObjectURL(blob); s.audioBuf=buf; s.dur=buf.duration;
+        toast(t('tRecOk')(buf.duration.toFixed(1),s.title));
+      }catch(err){ toast(t('tRecErr')); }
+      renderScenes();
+    };
+    mediaRec.start();
+    state.recording=s.id; renderScenes();
+    toast(t('tRecOn'));
+  }catch(err){ toast(t('tMicErr')); }
+}
+
+/* ============ MEDIA NỀN (ẢNH + VIDEO) ============ */
+const bgInput=document.createElement('input');
+bgInput.type='file'; bgInput.accept='image/*,video/*'; bgInput.style.display='none';
+document.body.appendChild(bgInput);
+let bgTarget=null;
+function pickSceneMedia(s,i){ bgTarget={s,i}; bgInput.value=''; bgInput.click(); }
+bgInput.addEventListener('change',()=>{
+  const f=bgInput.files[0]; if(!f||!bgTarget) return;
+  const s=bgTarget.s, i=bgTarget.i;
+  const url=URL.createObjectURL(f);
+  if(f.type.startsWith('video/')){
+    const v=document.createElement('video');
+    v.src=url; v.muted=true; v.playsInline=true; v.loop=true; v.preload='auto';
+    v.onloadeddata=()=>{ s.bgVid=v; s.bgImg=null; state.cur=i; renderScenes(); drawFrame(s,0,0); toast(t('tMediaVid')(s.title)); };
+    v.onerror=()=>toast(t('tMediaErr'));
+  }else{
+    const img=new Image();
+    img.onload=()=>{ s.bgImg=img; s.bgVid=null; state.cur=i; renderScenes(); drawFrame(s,0,0); toast(t('tMediaImg')(s.title)); };
+    img.onerror=()=>toast(t('tMediaErr'));
+    img.src=url;
+  }
+});
+
+/* ============ NHÂN VẬT: HUONG AI mặc định + ảnh tải lên ============ */
+const huongImg=new Image();
+huongImg.src='assets/huong-ai.jpg';
+huongImg.onload=()=>drawFrame(curScene(),0,0);
+const brandBadge=new Image();
+brandBadge.src='icons/icon-brand-512.png';
+brandBadge.onload=()=>drawFrame(curScene(),0,0);
+
+function detectTransparency(img){
+  try{
+    const c=document.createElement('canvas'); c.width=32; c.height=32;
+    const cg=c.getContext('2d'); cg.drawImage(img,0,0,32,32);
+    const d=cg.getImageData(0,0,32,32).data;
+    for(let i=3;i<d.length;i+=4){ if(d[i]<250) return true; }
+  }catch(e){}
+  return false;
+}
+$('charFile').addEventListener('change', e=>{
+  const f=e.target.files[0]; if(!f) return;
+  const url=URL.createObjectURL(f);
+  const img=new Image();
+  img.onload=()=>{
+    state.charImg=img;
+    state.charCut = f.type==='image/png' && detectTransparency(img);
+    $('charPreview').src=url; $('charPreview').hidden=false;
+    $('btnCharReset').hidden=false;
+    drawFrame(curScene(),0,0); toast(t('tCharOk'));
+  };
+  img.src=url;
+});
+$('btnCharReset').onclick=()=>{
+  state.charImg=null; state.charCut=false;
+  $('charPreview').hidden=true; $('btnCharReset').hidden=true;
+  drawFrame(curScene(),0,0); toast(t('tCharReset'));
+};
+['charSize','charX'].forEach(id=> $(id).addEventListener('input',()=>drawFrame(curScene(),0,0)) );
+
+/* ============ BẢN ĐỒ VIỆT NAM (Path2D cho canvas) ============ */
+const VN_MAINLAND="M5.6,64 L32,56 52,50 80,60 112,36 134,26 160,44 188,44 200,84 236,98 212,124 188,136 160,160 156,200 148,208 180,252 204,284 224,300 248,316 272,344 282,376 292,408 292,444 288,472 280,504 252,524 200,544 184,568 168,580 140,600 112,616 114,592 112,564 98,544 124,524 168,522 154,494 176,490 220,466 216,420 224,384 212,352 184,318 180,296 150,244 128,216 76,190 114,166 96,136 46,126 36,92 Z";
+const VN_ISLANDS=[[80,552,8],[184,614,4.5],[388,300,3],[398,308,2.4],[380,311,2],[392,318,2],[452,560,2.6],[470,548,2.2],[484,566,2.8],[462,578,2],[496,552,2],[440,590,2.2]];
+let vnPath=null;
+try{ vnPath=new Path2D(VN_MAINLAND); }catch(e){}
+function drawVNMap(g,x,y,h,alpha){
+  if(!vnPath) return;
+  const sc=h/640;
+  g.save();
+  g.translate(x,y); g.scale(sc,sc);
+  g.fillStyle='rgba(158,59,78,'+alpha+')';
+  g.fill(vnPath);
+  VN_ISLANDS.forEach(([ix,iy,r])=>{ g.beginPath(); g.arc(ix,iy,r,0,Math.PI*2); g.fill(); });
+  g.font='italic 15px Georgia,serif';
+  g.fillText('Hoàng Sa',362,340);
+  g.fillText('Trường Sa',426,614);
+  g.restore();
+}
+
+/* ============ VẼ KHUNG HÌNH ============ */
+const cv=$('stage'), g=cv.getContext('2d');
+const W=1280,H=720;
+function curScene(){ return state.scenes[state.cur]||null; }
+function sceneMedia(s){ return s ? (s.bgVid||s.bgImg) : null; }
+
+/* Bảng màu cố định của video xuất ra (độc lập giao diện sáng/tối) */
+const V={paperA:'#FAF6EF',paperB:'#EFE4D8',accent:'#9e3b4e',accentDk:'#7f2e3f',gold:'#a9781f',ink:'#2b2225',muted:'#6d635f',badge:'#cf6a60'};
+
+function drawFrame(s,tt,amp){
+  const media=sceneMedia(s);
+  const grad=g.createLinearGradient(0,0,0,H);
+  grad.addColorStop(0,V.paperA); grad.addColorStop(1,V.paperB);
+  g.fillStyle=grad; g.fillRect(0,0,W,H);
+  if(!media && $('optMap').value==='1'){
+    drawVNMap(g, W*0.36, 60, 600, 0.055);
+  }
+  if(media){
+    const mw=media.videoWidth||media.width, mh=media.videoHeight||media.height;
+    if(mw&&mh){
+      const sc=Math.max(W/mw,H/mh), dw=mw*sc, dh=mh*sc;
+      try{ g.drawImage(media,(W-dw)/2,(H-dh)/2,dw,dh); }catch(e){}
+    }
+    const sh=g.createLinearGradient(0,H-190,0,H);
+    sh.addColorStop(0,'rgba(32,25,27,0)'); sh.addColorStop(1,'rgba(32,25,27,0.62)');
+    g.fillStyle=sh; g.fillRect(0,H-190,W,190);
+  }
+  g.fillStyle=V.accent;
+  g.fillRect(0,0,W,6);
+  g.fillStyle=V.gold;
+  g.fillRect(0,6,W,2);
+  if(!media){
+    g.font='700 31px Georgia,serif';
+    g.fillStyle=V.accentDk;
+    g.fillText(($('vidTitle').value||'').toUpperCase(), 48, 66);
+    g.font='500 19px Georgia,serif';
+    g.fillStyle=V.muted;
+    g.fillText(($('vidBrand').value||'').replace(/&amp;/g,'&'), 48, 95);
+  }
+
+  if(s){
+    const idx=state.scenes.indexOf(s)+1;
+    const tag=t('scene')+' '+String(idx).padStart(2,'0')+' / '+String(state.scenes.length).padStart(2,'0');
+    if(media){
+      g.font='600 19px ui-monospace,Menlo,monospace';
+      const tw=g.measureText(tag).width;
+      g.fillStyle='rgba(127,46,63,0.87)'; roundRect(g,36,24,tw+28,38,10); g.fill();
+      g.fillStyle='#fff'; g.fillText(tag,50,50);
+    }else{
+      g.font='600 20px ui-monospace,Menlo,monospace';
+      g.fillStyle=V.gold;
+      g.fillText(tag, 48, 150);
+      g.font='700 38px Georgia,serif';
+      g.fillStyle=V.ink;
+      wrapText(s.title, 48, 200, 600, 46, 3);
+    }
+  }
+
+  /* chữ ký vẽ trước nhân vật để khung trình bày phủ lên tự nhiên */
+  g.font='400 30px "Great Vibes",cursive';
+  g.fillStyle = media ? 'rgba(255,255,255,0.92)' : 'rgba(158,59,78,0.8)';
+  g.fillText("Je m'appelle Hương", W-320, H-18);
+
+  drawCharacter(g,tt,amp);
+
+  if(s && $('optSub').value==='1' && s.text){
+    g.font='600 25px system-ui,sans-serif';
+    const lines=wrapCalc(s.text,920).slice(0,3);
+    const bh=lines.length*36+24;
+    g.fillStyle='rgba(255,253,251,0.94)';
+    roundRect(g, W/2-490, H-40-bh, 980, bh, 14); g.fill();
+    g.strokeStyle='rgba(158,59,78,0.5)'; g.lineWidth=2;
+    roundRect(g, W/2-490, H-40-bh, 980, bh, 14); g.stroke();
+    g.fillStyle=V.ink; g.textAlign='center';
+    lines.forEach((ln,k)=> g.fillText(ln, W/2, H-40-bh+38+k*36) );
+    g.textAlign='left';
+  }
+  if($('optLogo').value==='1'){
+    const lx=W-58, ly=media?58:H-96, r=34;
+    if(brandBadge.complete && brandBadge.naturalWidth){
+      g.save();
+      g.shadowColor='rgba(32,25,27,.3)'; g.shadowBlur=10;
+      g.drawImage(brandBadge,lx-r,ly-r,r*2,r*2);
+      g.restore();
+    }else{
+      g.beginPath(); g.arc(lx,ly,30,0,Math.PI*2);
+      g.fillStyle=V.badge; g.fill();
+      g.strokeStyle='#fff'; g.lineWidth=2.5; g.stroke();
+      g.font='400 34px "Great Vibes",cursive';
+      g.fillStyle='#fff'; g.textAlign='center';
+      g.fillText('LR', lx, ly+11);
+      g.textAlign='left';
+    }
+  }
+}
+
+function drawCharacter(g,tt,amp){
+  const size=(+$('charSize').value/100);
+  const cx=W*(+$('charX').value/100);
+  const bob=Math.sin(tt*7)*6*amp + amp*10;
+  const tilt=Math.sin(tt*5)*0.03*amp;
+  g.save();
+  g.translate(cx, H-14-bob);
+  g.rotate(tilt);
+  if(state.charImg && state.charCut){
+    /* PNG tách nền: vẽ cắt rời */
+    const im=state.charImg;
+    const h=H*0.86*size, w=h*(im.width/im.height);
+    g.fillStyle='rgba(60,30,35,.28)';
+    g.beginPath(); g.ellipse(0,6,w*0.3,12,0,0,Math.PI*2); g.fill();
+    g.drawImage(im,-w/2,-h,w,h);
+  }else{
+    /* HUONG AI (hoặc ảnh thường): khung trình bày bo góc */
+    const im=(state.charImg||((huongImg.complete&&huongImg.naturalWidth)?huongImg:null));
+    if(im){
+      const h=H*0.72*size, w=h*0.68, r=18;
+      g.save();
+      g.shadowColor='rgba(32,25,27,.35)'; g.shadowBlur=24; g.shadowOffsetY=8;
+      g.fillStyle='#fff';
+      roundRect(g,-w/2-6,-h-6,w+12,h+12,r+6); g.fill();
+      g.restore();
+      g.save();
+      roundRect(g,-w/2,-h,w,h,r); g.clip();
+      const ir=im.width/im.height, fr=w/h;
+      let dw,dh;
+      if(ir>fr){ dh=h; dw=h*ir; } else { dw=w; dh=w/ir; }
+      g.drawImage(im,-dw/2,-h+(h-dh)/2,dw,dh);
+      g.restore();
+      g.strokeStyle=V.accent; g.lineWidth=3;
+      roundRect(g,-w/2,-h,w,h,r); g.stroke();
+      /* thanh tên nhỏ — nằm gọn trên mép dưới khung */
+      if(!state.charImg){
+        g.font='700 16px Georgia,serif';
+        const label='HUONG AI';
+        const lw=g.measureText(label).width+26;
+        g.fillStyle=V.accent;
+        roundRect(g,-lw/2,-44,lw,30,15); g.fill();
+        g.fillStyle='#fff'; g.textAlign='center';
+        g.fillText(label,0,-23);
+        g.textAlign='left';
+      }
+    }else{
+      drawPlaceholder(g, H*0.8*size, amp, tt);
+    }
+  }
+  g.restore();
+}
+function drawPlaceholder(g,h,amp,tt){
+  const s=h/400;
+  g.save(); g.scale(s,s); g.translate(0,-400);
+  g.fillStyle='#b0666f'; roundRect(g,-70,150,140,250,26); g.fill();
+  g.fillStyle='#FFFFFF'; g.fillRect(-6,165,12,120);
+  g.fillStyle='#F5CDB2'; g.beginPath(); g.arc(0,105,52,0,Math.PI*2); g.fill();
+  g.fillStyle='#2b2225'; g.beginPath(); g.arc(0,84,54,Math.PI,0); g.fill();
+  const blink=Math.sin(tt*3)>0.95?0.15:1;
+  g.fillStyle='#2b2225';
+  g.beginPath(); g.ellipse(-20,102,7,7*blink,0,0,Math.PI*2); g.fill();
+  g.beginPath(); g.ellipse(20,102,7,7*blink,0,0,Math.PI*2); g.fill();
+  const mo=3+amp*30, mw=10+amp*7;
+  g.fillStyle='#8c3a41';
+  g.beginPath(); g.ellipse(0,134,mw,mo,0,0,Math.PI*2); g.fill();
+  g.restore();
+}
+function roundRect(g,x,y,w,h,r){ g.beginPath(); g.moveTo(x+r,y); g.arcTo(x+w,y,x+w,y+h,r); g.arcTo(x+w,y+h,x,y+h,r); g.arcTo(x,y+h,x,y,r); g.arcTo(x,y,x+w,y,r); g.closePath(); }
+function wrapCalc(text,maxW){
+  const words=text.split(/\s+/), lines=[]; let ln='';
+  words.forEach(w=>{ const test=ln?ln+' '+w:w; if(g.measureText(test).width>maxW && ln){lines.push(ln);ln=w;} else ln=test; });
+  if(ln)lines.push(ln); return lines;
+}
+function wrapText(text,x,y,maxW,lh,maxLines){
+  wrapCalc(text,maxW).slice(0,maxLines).forEach((ln,k)=>g.fillText(ln,x,y+k*lh));
+}
+
+/* ============ PHÁT / XEM TRƯỚC ============ */
+let playToken=0;
+function stopAll(){
+  playToken++;
+  state.scenes.forEach(s=>{ if(s.bgVid){ try{s.bgVid.pause();}catch(e){} } });
+  try{speechSynthesis.cancel();}catch(e){}
+}
+$('btnStop').onclick=stopAll;
+$('btnPlay').onclick=()=>{ if(state.scenes.length) playScene(state.cur,false); };
+$('btnPlayAll').onclick=()=>{ if(state.scenes.length) playFrom(0); };
+async function playFrom(i){ const tk=++playToken; for(let k=i;k<state.scenes.length;k++){ if(tk!==playToken)return; state.cur=k; renderScenes(); await playScene(k,true,tk); } }
+
+function sceneDur(s){
+  if(s.audioBuf) return s.dur;
+  if(s.bgVid && isFinite(s.bgVid.duration) && s.bgVid.duration>0) return s.bgVid.duration;
+  return Math.max(2,+$('optDur').value||6);
+}
+function playScene(i,chained,tk){
+  return new Promise(res=>{
+    const s=state.scenes[i]; if(!s){res();return;}
+    const token=tk||++playToken;
+    const dur=sceneDur(s);
+    let analyser=null,dataArr=null,src=null;
+    if(s.bgVid){ try{ s.bgVid.currentTime=0; s.bgVid.play(); }catch(e){} }
+    if(s.audioBuf){
+      const ac=ctx();
+      src=ac.createBufferSource(); src.buffer=s.audioBuf;
+      analyser=ac.createAnalyser(); analyser.fftSize=512;
+      dataArr=new Uint8Array(analyser.frequencyBinCount);
+      src.connect(analyser); analyser.connect(ac.destination);
+      src.start();
+    }
+    const t0=performance.now();
+    (function loop(){
+      if(token!==playToken){ try{src&&src.stop();}catch(e){} if(s.bgVid)try{s.bgVid.pause();}catch(e){} res(); return; }
+      const tt=(performance.now()-t0)/1000;
+      let amp=0.25+0.15*Math.abs(Math.sin(tt*8));
+      if(analyser){ analyser.getByteTimeDomainData(dataArr); let sum=0; for(let k=0;k<dataArr.length;k++){const v=(dataArr[k]-128)/128; sum+=v*v;} amp=Math.min(1.5,Math.sqrt(sum/dataArr.length)*5); }
+      drawFrame(s,tt,amp);
+      $('tc').textContent=fmtT(tt)+' · '+t('scene')+' '+(i+1);
+      if(tt<dur) requestAnimationFrame(loop);
+      else { if(s.bgVid)try{s.bgVid.pause();}catch(e){} res(); }
+    })();
+  });
+}
+function fmtT(x){ const m=Math.floor(x/60),s=(x%60).toFixed(1); return String(m).padStart(2,'0')+':'+(s<10?'0':'')+s; }
+
+/* ============ GIỌNG MÁY (nghe thử) ============ */
+function loadVoices(){
+  const sel=$('ttsVoice'); const vs=speechSynthesis.getVoices().filter(v=>/^vi/i.test(v.lang));
+  const ph=sel.options[0]?sel.options[0].textContent:'—';
+  sel.innerHTML='<option value="">'+ph+'</option>';
+  vs.forEach(v=>{ const o=document.createElement('option'); o.value=v.name; o.textContent=v.name; sel.appendChild(o); });
+}
+if('speechSynthesis' in window){ loadVoices(); speechSynthesis.onvoiceschanged=loadVoices; }
+$('btnTtsTest').onclick=()=>{
+  const s=curScene(); if(!s||!s.text){toast(t('tNoText'));return;}
+  if(!('speechSynthesis' in window)){toast(t('tNoTts'));return;}
+  speechSynthesis.cancel();
+  const u=new SpeechSynthesisUtterance(s.text); u.lang='vi-VN';
+  const name=$('ttsVoice').value; const v=speechSynthesis.getVoices().find(x=>x.name===name); if(v)u.voice=v;
+  speechSynthesis.speak(u);
+  playScene(state.cur,false);
+};
+
+/* ============ XUẤT VIDEO ============ */
+$('btnExport').onclick = async ()=>{
+  if(!state.scenes.length){ toast(t('tNoScene')); return; }
+  if(state.exporting) return;
+  state.exporting=true; $('btnExport').disabled=true; $('dlBox').innerHTML='';
+  $('expProg').style.display='block'; $('expBar').style.width='0%';
+  stopAll(); const token=++playToken;
+
+  const ac=ctx();
+  const dest=ac.createMediaStreamDestination();
+  const vStream=cv.captureStream(30);
+  const mixed=new MediaStream([...vStream.getVideoTracks(), ...dest.stream.getAudioTracks()]);
+
+  let mime='';
+  for(const m of ['video/mp4;codecs=avc1','video/mp4','video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm']){
+    if(window.MediaRecorder && MediaRecorder.isTypeSupported(m)){ mime=m; break; }
+  }
+  if(!mime){ toast(t('tNoRec')); state.exporting=false; $('btnExport').disabled=false; return; }
+  const rec=new MediaRecorder(mixed,{mimeType:mime,videoBitsPerSecond:5_000_000});
+  const chunks=[]; rec.ondataavailable=e=>{if(e.data.size)chunks.push(e.data);};
+  const done=new Promise(r=>rec.onstop=r);
+  rec.start(500);
+
+  const total=state.scenes.length;
+  for(let i=0;i<total;i++){
+    if(token!==playToken) break;
+    const s=state.scenes[i];
+    const dur=(s.audioBuf?s.dur+0.25:sceneDur(s));
+    let analyser=null,dataArr=null,src=null;
+    if(s.bgVid){ try{ s.bgVid.currentTime=0; s.bgVid.play(); }catch(e){} }
+    if(s.audioBuf){
+      src=ac.createBufferSource(); src.buffer=s.audioBuf;
+      analyser=ac.createAnalyser(); analyser.fftSize=512; dataArr=new Uint8Array(analyser.frequencyBinCount);
+      src.connect(analyser); analyser.connect(dest);
+      src.start();
+    }
+    const t0=performance.now();
+    await new Promise(res=>{
+      (function loop(){
+        const tt=(performance.now()-t0)/1000;
+        let amp=0.2;
+        if(analyser){ analyser.getByteTimeDomainData(dataArr); let sum=0; for(let k=0;k<dataArr.length;k++){const v=(dataArr[k]-128)/128; sum+=v*v;} amp=Math.min(1.5,Math.sqrt(sum/dataArr.length)*5); }
+        drawFrame(s,tt,amp);
+        $('tc').textContent=t('building')+' '+(i+1)+'/'+total;
+        $('expBar').style.width=(((i+tt/dur)/total)*100).toFixed(1)+'%';
+        if(tt<dur) requestAnimationFrame(loop); else res();
+      })();
+    });
+    try{src&&src.stop();}catch(e){}
+    if(s.bgVid)try{s.bgVid.pause();}catch(e){}
+  }
+  rec.stop(); await done;
+  const blob=new Blob(chunks,{type:mime.split(';')[0]});
+  const ext=mime.includes('mp4')?'mp4':'webm';
+  const a=document.createElement('a');
+  a.className='dl'; a.href=URL.createObjectURL(blob); a.download='video-je-mappelle-huong.'+ext;
+  a.textContent=t('dl')((blob.size/1048576).toFixed(1),ext);
+  $('dlBox').appendChild(a);
+  $('expBar').style.width='100%';
+  toast(t('tDone'));
+  state.exporting=false; $('btnExport').disabled=false;
+};
+
+/* ============ TABS & NGÔN NGỮ ============ */
+document.querySelectorAll('.tabs button').forEach(b=>{
+  b.onclick=()=>{
+    document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active'));
+    document.querySelectorAll('.pane').forEach(x=>x.classList.remove('show'));
+    b.classList.add('active'); $('pane-'+b.dataset.pane).classList.add('show');
+    window.scrollTo({top:0,behavior:'smooth'});
+  };
+});
+$('langVI').onclick=()=>{ lang='vi'; applyLang(); };
+$('langEN').onclick=()=>{ lang='en'; applyLang(); };
+
+/* ============ TỰ LƯU (kịch bản + cài đặt) ============ */
+function saveScript(){
+  store.set('jmh-video-script-v5', JSON.stringify(state.scenes.map(s=>({title:s.title,text:s.text}))));
+}
+function loadScript(){
+  try{
+    const r=store.get('jmh-video-script-v5');
+    if(r){ const arr=JSON.parse(r); if(arr.length){ state.scenes=arr.map(o=>newScene(o.title,o.text)); return true; } }
+  }catch(e){}
+  return false;
+}
+const SETTING_IDS=['vidTitle','vidBrand','optSub','optDur','optLogo','optMap','charSize','charX'];
+function saveSettings(){
+  const o={}; SETTING_IDS.forEach(id=>o[id]=$(id).value);
+  store.set('jmh-studio-settings', JSON.stringify(o));
+}
+function loadSettings(){
+  try{
+    const r=store.get('jmh-studio-settings');
+    if(r){ const o=JSON.parse(r); SETTING_IDS.forEach(id=>{ if(o[id]!=null) $(id).value=o[id]; }); }
+  }catch(e){}
+}
+SETTING_IDS.forEach(id=>$(id).addEventListener('input',()=>{ saveSettings(); drawFrame(curScene(),0,0); }));
+
+/* ============ KHỞI ĐỘNG ============ */
+(function init(){
+  const saved=store.get('jmh-lang');
+  if(saved && I18N[saved]) lang=saved;
+  loadSettings();
+  const loaded=loadScript();
+  if(!loaded) SAMPLE.forEach(([a,b])=>state.scenes.push(newScene(a,b)));
+  applyLang();
+})();
+
+/* ============ PWA ============ */
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>{ navigator.serviceWorker.register('sw.js').catch(()=>{}); });
+}
+</script>
+</body>
+</html>
